@@ -1,0 +1,120 @@
+1. Account & Character (계정 및 캐릭터)
+Adventure (모험단)
+
+adventure_id (PK)  long long
+
+adventure_name char(20)
+
+status (TINYINT)
+
+created_at (DATETIME)
+
+updated_at (DATETIME)
+
+Character (캐릭터)
+
+character_id (PK) long long
+
+adventure_id (FK) 
+
+guild_id (FK, Nullable)
+
+job_code (INT, 기본 직업군)
+
+nickname (char 10)
+
+state_code (INT, 비트마스킹용 상태값)
+
+created_at (DATETIME)
+
+updated_at (DATETIME)
+
+Character_Stat (캐릭터 스탯/상태)
+
+character_id (PK, FK - 캐릭터 테이블과 1:1)
+
+level(int)
+
+hp_max (INT)
+
+hp (INT)
+
+mp_max (INT)
+
+mp (INT)
+
+is_alive (TINYINT, 1=Alive / 0=Dead)
+
+last_map_id (INT, 마지막 접속 위치)
+
+2. Social (소셜)
+Guild (길드)
+
+guild_id (PK)
+
+guild_name (CHAR 10)
+
+guild_level (INT)
+
+status (TINYINT)
+
+created_at(datetime)
+
+updated_at(datetime)
+
+3. Item & Inventory (아이템 및 인벤토리)
+Item_Dictionary (아이템 마스터 사전 - 기획 데이터)
+
+item_dict_id (PK)
+
+item_type (INT, 장비/소모품/재료 등)
+
+item_name char(50)
+
+description (text)
+
+created_at (datetime)
+
+updated_at (datetime)
+
+Item_Instance (실제 존재하는 아이템 데이터 - 기존 Inventory_detail)
+
+item_instance_id (PK, 유일한 아이템 고유 번호) long long
+
+item_dict_id (FK, 아이템 사전 참조)
+
+count (INT, 겹치는 개수) int
+
+enhance_level (INT, 강화 수치) int
+
+created_at (datetime)
+
+updated_at (datetime)
+
+Inventory (인벤토리 슬롯 매핑)
+
+character_id (PK, FK) 
+
+tab_type (PK, 인벤토리 탭 종류) (TINYINT)
+
+slot_index (PK, 몇 번째 칸인지) int
+
+item_instance_id (FK, 해당 칸에 들어있는 아이템 고유 번호)
+(참고: 캐릭터, 탭, 슬롯 3가지를 묶어서 복합 PK로 사용합니다.)
+
+4. Economy (경제/거래)
+Auction (거래소)
+
+auction_id (PK, 거래 고유 번호) longlong
+
+seller_id (FK, 판매자 character_id 참조)  long long 
+
+item_instance_id (FK, 판매 등록된 아이템 고유 번호) long long
+
+price (INT, 판매가) int
+
+trade_status (TINYINT, 0:대기 / 1:판매완료 / 2:기간만료)
+
+created_at (등록 시간)
+
+expired_at (만료 예정 시간)
