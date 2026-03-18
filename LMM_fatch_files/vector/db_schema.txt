@@ -1,0 +1,106 @@
+-- 모험단
+CREATE TABLE Adventure (
+    adventure_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    adventure_name VARCHAR(20) NOT NULL,
+    status TINYINT UNSIGNED DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- 길드
+CREATE TABLE Guild (
+    guild_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    guild_name VARCHAR(30) NOT NULL,
+    guild_level INT UNSIGNED DEFAULT 1,
+    status TINYINT UNSIGNED DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- 캐릭터
+CREATE TABLE `Character` (
+    character_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    adventure_id BIGINT UNSIGNED NOT NULL,
+    guild_id BIGINT UNSIGNED NULL,
+    job_code INT UNSIGNED NOT NULL,
+    nickname VARCHAR(30) NOT NULL,
+    state_code INT UNSIGNED DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (adventure_id) REFERENCES Adventure(adventure_id),
+    FOREIGN KEY (guild_id) REFERENCES Guild(guild_id)
+);
+
+-- 캐릭터 스탯
+CREATE TABLE Character_Stat (
+    character_id BIGINT UNSIGNED PRIMARY KEY,
+    level INT UNSIGNED DEFAULT 1,
+    hp_max INT UNSIGNED NOT NULL,
+    hp INT UNSIGNED NOT NULL,
+    mp_max INT UNSIGNED NOT NULL,
+    mp INT UNSIGNED NOT NULL,
+    is_alive TINYINT UNSIGNED DEFAULT 1,
+    last_map_id INT UNSIGNED NOT NULL,
+    FOREIGN KEY (character_id) REFERENCES `Character`(character_id) ON DELETE CASCADE
+);
+
+-- 아이템 사전
+CREATE TABLE Item_Dictionary (
+    item_dict_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    item_type INT UNSIGNED NOT NULL,
+    item_name VARCHAR(50) NOT NULL,
+    description TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- 아이템 인스턴스
+CREATE TABLE Item_Instance (
+    item_instance_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    item_dict_id INT UNSIGNED NOT NULL,
+    count INT UNSIGNED DEFAULT 1,
+    enhance_level INT UNSIGNED DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (item_dict_id) REFERENCES Item_Dictionary(item_dict_id)
+);
+
+-- 인벤토리
+CREATE TABLE Inventory (
+    character_id BIGINT UNSIGNED NOT NULL,
+    tab_type TINYINT UNSIGNED NOT NULL,
+    slot_index INT UNSIGNED NOT NULL,
+    item_instance_id BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (character_id, tab_type, slot_index),
+    FOREIGN KEY (character_id) REFERENCES `Character`(character_id),
+    FOREIGN KEY (item_instance_id) REFERENCES Item_Instance(item_instance_id)
+);
+
+-- 거래소
+CREATE TABLE Auction (
+    auction_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    seller_id BIGINT UNSIGNED NOT NULL,
+    item_instance_id BIGINT UNSIGNED NOT NULL,
+    price INT UNSIGNED NOT NULL,
+    trade_status TINYINT UNSIGNED DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expired_at DATETIME NOT NULL,
+    FOREIGN KEY (seller_id) REFERENCES `Character`(character_id),
+    FOREIGN KEY (item_instance_id) REFERENCES Item_Instance(item_instance_id)
+);
+
+Convert the provided MySQL schema into C++ DTO (Data Transfer Object) structs.
+Strictly follow these implementation rules:
+
+1. Type Mapping:
+   - BIGINT UNSIGNED -> uint64_t
+   - INT UNSIGNED -> uint32_t
+   - TINYINT UNSIGNED -> uint8_t
+   - DATETIME -> std::string
+
+2. Enum Enforcement:
+   - Fields representing status or types (e.g., status, job_code, state_code, item_type, tab_type, trade_status) MUST be defined as explicit `enum class` outside the structs.
+
+3. Language & Output Constraint:
+   - ALL code comments MUST be written in Korean (한국어).
+   - DO NOT output any conversational text, explanations, or justifications. Output ONLY the C++ code block.
