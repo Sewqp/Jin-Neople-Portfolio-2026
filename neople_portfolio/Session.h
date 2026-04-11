@@ -8,7 +8,8 @@
 #include <mutex>    // 👈 자물쇠 추가
 #include <atomic>   // 👈 원자적 연산 추가
 
-enum class IO_TYPE { RECV, SEND };
+
+enum class IO_TYPE { RECV, SEND, ACCEPT };
 
 struct ExOverlapped {
     OVERLAPPED base;
