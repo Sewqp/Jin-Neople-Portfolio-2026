@@ -1,10 +1,17 @@
 # Jin-Neople-Portfolio-2026
 
 ## 사용 AI 모델
-- **Local LLM**: Meta LLaMA 3.1 8B Instruct (로컬 폐쇄망 운용)
-- **플랫폼**: LM Studio (lmstudio-community/meta-llama-3.1-8b-instruct)
+- **Local LLM**: Meta LLaMA 3.1 8B Instruct → Qwen 2.5 Coder 14B (업그레이드)
+- **플랫폼**: LM Studio
 - **운용 방식**: 외부 서버 전송 없는 완전 로컬 환경. 코드 유출 없음.
-- ~~Qwen 2.5 Coder 14B~~ → LLaMA 3.1 8B로 변경 (프로젝트 시작부터 적용)
+
+---
+
+## 의존성 (Dependencies)
+- Windows IOCP (ws2_32, mswsock)
+- MySQL Connector/C++ 8.x (`mysqlcppconn.lib`)
+- Redis (hiredis) — 예정
+- Node.js (Express, mysql2, ioredis) — 예정
 
 ---
 
@@ -37,6 +44,14 @@
 **2026-04-11**
 - Acceptor.h / Acceptor.cpp 구현 (AcceptEx 기반 비동기 Accept)
 - IocpCore.h 수정 (SetAcceptor, m_acceptor 추가)
+- IO_TYPE에 ACCEPT 추가
+
+### UPDATE
+**2026-04-12**
+- PacketHandler.h / PacketHandler.cpp 구현 (패킷 ID별 디스패처)
+- DBManager.h / DBManager.cpp 구현 (MySQL 커넥션 풀 기반 CRUD)
+- MySQL Connector/C++ 연동 완료
+- LLM 모델 Qwen 2.5 Coder 14B로 업그레이드
 
 ---
 
@@ -44,30 +59,37 @@
 
 ```
 C++ 게임 서버 (IOCP)
-├── Packet.h              ✅ 완성
-├── AsyncLogger.h/.cpp    ✅ 완성
-├── IocpCore.h/.cpp       🔄 WorkerThreadMain 완성 중
-├── Session.h/.cpp        ✅ 완성
-├── SessionManager.h/.cpp ✅ 완성
-├── RingBuffer.h/.cpp     ✅ 완성
-├── Acceptor.h/.cpp       ✅ 완성
-├── PacketHandler.h/.cpp  ❌ 미구현
-├── DBManager.h/.cpp      ❌ 미구현
-├── RedisManager.h/.cpp   ❌ 미구현
-├── SyncWorker.h/.cpp     ❌ 미구현
-├── Room.h/.cpp           ❌ 미구현
-├── RoomManager.h/.cpp    ❌ 미구현
-└── main.cpp              ❌ 미구현
+├── Packet.h                ✅ 완성
+├── AsyncLogger.h/.cpp      ✅ 완성
+├── IocpCore.h/.cpp         🔄 WorkerThreadMain 완성 중
+├── Session.h/.cpp          ✅ 완성
+├── SessionManager.h/.cpp   ✅ 완성
+├── RingBuffer.h/.cpp       ✅ 완성
+├── Acceptor.h/.cpp         ✅ 완성
+├── PacketHandler.h/.cpp    ✅ 완성
+├── DBManager.h/.cpp        ✅ 완성
+├── RedisManager.h/.cpp     ❌ 미구현
+├── SyncWorker.h/.cpp       ❌ 미구현
+├── Room.h/.cpp             ❌ 미구현
+├── RoomManager.h/.cpp      ❌ 미구현
+└── main.cpp                ❌ 미구현
 
 Node.js 웹 서버
-├── server.js             ❌ 미구현
-├── db.js                 ❌ 미구현
-├── redis.js              ❌ 미구현
+├── server.js               ❌ 미구현
+├── db.js                   ❌ 미구현
+├── redis.js                ❌ 미구현
 └── routes/
-    ├── character.js      ❌ 미구현
-    ├── auction.js        ❌ 미구현
-    ├── admin.js          ❌ 미구현
-    └── ranking.js        ❌ 미구현
+    ├── character.js        ❌ 미구현
+    ├── auction.js          ❌ 미구현
+    ├── admin.js            ❌ 미구현
+    └── ranking.js          ❌ 미구현
+```
+
+**진행률**
+```
+C++       : 9 / 14 파일 완성 (64%)
+Node.js   : 0 / 7  파일 완성 (0%)
+전체      : 9 / 21 파일 완성 (43%)
 ```
 
 ---
@@ -75,7 +97,7 @@ Node.js 웹 서버
 ## AI 파이프라인 구조
 
 ```
-[LLaMA 3.1 8B — 로컬 폐쇄망]
+[Qwen 2.5 Coder 14B — 로컬 폐쇄망]
         ↓
 system_prom.txt (코딩 규칙 강제)
         +
