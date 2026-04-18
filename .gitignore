@@ -1,0 +1,14 @@
+.vs/
+*.ipch
+*.pch
+*.obj
+*.exe
+*.dll
+*.pdb
+*.ilk
+*.exp
+*.lib
+Debug/
+Release/
+x64/
+x86/
