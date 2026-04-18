@@ -1,0 +1,12 @@
+﻿  Acceptor.cpp
+  AsyncLogger.cpp
+  IocpCore.cpp
+  Redismanager.cpp
+  RingBuffer.cpp
+C:\Users\mocha\Desktop\Jin-Neople-Portfolio-2026\neople_portfolio\RedisManager.h(2,10): error C1083: 포함 파일을 열 수 없습니다. 'hiredis/hiredis.h': No such file or directory
+  (compiling source file 'Redismanager.cpp')
+  
+  Session.cpp
+  SessionManager.cpp
+  SyncWorker.cpp
+  코드를 생성하고 있습니다...
