@@ -133,6 +133,8 @@
     <ClInclude Include="Packet.h" />
     <ClInclude Include="RedisManager.h" />
     <ClInclude Include="RingBuffer.h" />
+    <ClInclude Include="Room.h" />
+    <ClInclude Include="RoomManager.h" />
     <ClInclude Include="Session.h" />
     <ClInclude Include="SessionManager.h" />
     <ClInclude Include="SyncWorker.h" />
@@ -141,8 +143,11 @@
     <ClCompile Include="Acceptor.cpp" />
     <ClCompile Include="AsyncLogger.cpp" />
     <ClCompile Include="IocpCore.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="Redismanager.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
+    <ClCompile Include="Room.cpp" />
+    <ClCompile Include="RoomManager.cpp" />
     <ClCompile Include="Session.cpp" />
     <ClCompile Include="SessionManager.cpp" />
     <ClCompile Include="SyncWorker.cpp" />
