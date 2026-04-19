@@ -53,6 +53,18 @@
 - MySQL Connector/C++ 연동 완료
 - LLM 모델 Qwen 2.5 Coder 14B로 업그레이드
 
+### UPDATE
+**2026-04-18**
+- RedisManager.h/.cpp 구현 
+- SyncWorker.h/.cpp 구현 
+- Redis Connector/C++ 연동 완료
+
+### UPDATE
+**2026-04-19**
+- Room.h/.cpp 구현
+- RoomManager.h/.cpp 구현
+- main.cpp 구현
+-  C++ 코드 완성 및 Node.js 웹 서버 구현 시작
 ---
 
 ## 프로젝트 구조
@@ -68,11 +80,11 @@ C++ 게임 서버 (IOCP)
 ├── Acceptor.h/.cpp         ✅ 완성
 ├── PacketHandler.h/.cpp    ✅ 완성
 ├── DBManager.h/.cpp        ✅ 완성
-├── RedisManager.h/.cpp     ❌ 미구현
-├── SyncWorker.h/.cpp       ❌ 미구현
-├── Room.h/.cpp             ❌ 미구현
-├── RoomManager.h/.cpp      ❌ 미구현
-└── main.cpp                ❌ 미구현
+├── RedisManager.h/.cpp     ✅ 완성
+├── SyncWorker.h/.cpp       ✅ 완성
+├── Room.h/.cpp             ✅ 완성
+├── RoomManager.h/.cpp      ✅ 완성
+└── main.cpp                ✅ 완성
 
 Node.js 웹 서버
 ├── server.js               ❌ 미구현
