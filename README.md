@@ -73,7 +73,7 @@
 C++ 게임 서버 (IOCP)
 ├── Packet.h                ✅ 완성
 ├── AsyncLogger.h/.cpp      ✅ 완성
-├── IocpCore.h/.cpp         🔄 WorkerThreadMain 완성 중
+├── IocpCore.h/.cpp         ✅ 완성
 ├── Session.h/.cpp          ✅ 완성
 ├── SessionManager.h/.cpp   ✅ 완성
 ├── RingBuffer.h/.cpp       ✅ 완성
@@ -99,9 +99,9 @@ Node.js 웹 서버
 
 **진행률**
 ```
-C++       : 14 / 14 파일 완성 (99%)
+C++       : 14 / 14 파일 완성 (100%)
 Node.js   : 0 / 7  파일 완성 (0%)
-전체      : 9 / 21 파일 완성 (43%)
+전체      : 14 / 21 파일 완성 (67%)
 ```
 
 ---
