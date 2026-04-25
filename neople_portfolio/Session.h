@@ -29,7 +29,9 @@ public:
     void PostSend(char* data, size_t size);
 
     // [설명: IOCP에서 Send가 '완료'되었을 때 호출할 함수 (나중에 IocpCore에서 씀)]
+
     void SendCompleted();
+    void OnRecvCompleted(int bytes);
 
 private:
     void RegisterSend(); // 👈 실제 WSASend를 호출하는 내부 비공개 함수
