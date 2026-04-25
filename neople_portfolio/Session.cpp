@@ -103,3 +103,9 @@ void Session::SendCompleted() {
     }
     RegisterSend();
 }
+void Session::OnRecvCompleted(int bytes) {
+
+    AsyncLogger::GetInstance().Log(
+        "수신 완료. SessionID: " + std::to_string(m_sessionId) +
+        " Bytes: " + std::to_string(bytes));
+}
