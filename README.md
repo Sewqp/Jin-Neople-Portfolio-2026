@@ -10,7 +10,7 @@
 ## 의존성 (Dependencies)
 - Windows IOCP (ws2_32, mswsock)
 - MySQL Connector/C++ 8.x (`mysqlcppconn.lib`)
-- Redis (hiredis) — 예정
+- Redis (hiredis)
 - Node.js (Express, mysql2, ioredis) — 예정
 
 ---
