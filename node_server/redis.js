@@ -1,5 +1,5 @@
 const Redis  = require('ioredis');
-const { logger } = require('./server');
+const logger = require('./logger');
 
 // [Redis 연결]
 const redis = new Redis({ host: '127.0.0.1', port: 6379 });

@@ -7,7 +7,7 @@ const POOL_SIZE = 10;
 const pool = mysql.createPool({
     host:            '127.0.0.1',
     user:            'root',
-    password:        'password',
+    password:        'rootroot',
     database:        'game_server_schema',
     connectionLimit: POOL_SIZE
 });
