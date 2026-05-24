@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <ctime>
 #include <filesystem>
+#include <iostream>
 
 AsyncLogger::AsyncLogger() {
     // [생성자에서 바로 로거 스레드 시작 — 싱글톤이라 외부에서 Start() 호출 불필요]
@@ -55,6 +56,9 @@ void AsyncLogger::ProcessLoop() {
         std::string message = m_logQueue.front();
         m_logQueue.pop();
         lock.unlock(); // [파일 I/O 중에는 락 불필요 — 먼저 해제]
+
+        // [콘솔 출력]
+        std::cout << message << "\n";
 
         // [날짜별 로그 파일에 기록]
         std::filesystem::create_directories("logs");

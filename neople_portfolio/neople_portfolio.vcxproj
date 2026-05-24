@@ -105,14 +105,17 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\Users\mocha\Desktop\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files\MySQL\MySQL Server 8.0\include;C:\Users\mocha\Desktop\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\mocha\Desktop\vcpkg\installed\x64-windows\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>mysqlcppconn.lib;hiredis.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Program Files\MySQL\MySQL Server 8.0\lib;C:\Users\mocha\Desktop\vcpkg\installed\x64-windows\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libmysql.lib;hiredis.lib;ws2_32.lib;Mswsock.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>app.manifest %(AdditionalManifestFiles)</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -123,17 +126,28 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>C:\Program Files\MySQL\MySQL Server 8.0\include;C:\Users\mocha\Desktop\vcpkg\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>C:\Program Files\MySQL\MySQL Server 8.0\lib;C:\Users\mocha\Desktop\vcpkg\installed\x64-windows\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libmysql.lib;hiredis.lib;ws2_32.lib;Mswsock.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>app.manifest %(AdditionalManifestFiles)</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
+  <ItemGroup>
+    <None Include="app.manifest" />
+  </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Acceptor.h" />
     <ClInclude Include="AsyncLogger.h" />
+    <ClInclude Include="DBManager.h" />
     <ClInclude Include="IocpCore.h" />
     <ClInclude Include="Packet.h" />
+    <ClInclude Include="PacketHandler.h" />
     <ClInclude Include="RedisManager.h" />
     <ClInclude Include="RingBuffer.h" />
     <ClInclude Include="Room.h" />
@@ -145,8 +159,10 @@
   <ItemGroup>
     <ClCompile Include="Acceptor.cpp" />
     <ClCompile Include="AsyncLogger.cpp" />
+    <ClCompile Include="Dbmanager.cpp" />
     <ClCompile Include="IocpCore.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Packethandler.cpp" />
     <ClCompile Include="Redismanager.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
     <ClCompile Include="Room.cpp" />
@@ -155,6 +171,13 @@
     <ClCompile Include="SessionManager.cpp" />
     <ClCompile Include="SyncWorker.cpp" />
   </ItemGroup>
+  <Target Name="CopyVcpkgDlls" AfterTargets="Build">
+    <ItemGroup>
+      <VcpkgDll Include="C:\Users\mocha\Desktop\vcpkg\installed\x64-windows\bin\hiredis.dll" />
+      <VcpkgDll Include="C:\Program Files\MySQL\MySQL Server 8.0\lib\libmysql.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(VcpkgDll)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
