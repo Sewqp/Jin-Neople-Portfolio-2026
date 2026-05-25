@@ -1,4 +1,4 @@
-# Jin-Neople-Portfolio-2026
+# RPG GAME SERVER PORTFOLIO 2026
 
 ## 사용 AI 모델
 - **Local LLM**: Meta LLaMA 3.1 8B Instruct → Qwen 2.5 Coder 14B (업그레이드)
