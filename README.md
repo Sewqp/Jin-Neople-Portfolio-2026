@@ -80,6 +80,19 @@
 - routes/ranking.js 구현 (레벨/경매 랭킹)
 - Node.js 웹 서버 100% 완성
 
+### UPDATE
+**2026-05-07**
+- README 및 계획서 업데이트
+
+### UPDATE
+**2026-05-26**
+- DBManager: MySQL X DevAPI → MySQL C API(libmysql) 전환 (안정성 개선)
+- AsyncLogger: 콘솔 출력 추가, AI 에러 전송 구조 완성
+- Packethandler.cpp 인코딩 수정 (한글 로그 출력 정상화)
+- Node.js: logger.js 모듈 분리 (server.js에서 로거 책임 분리)
+- DB 더미 데이터 추가 (dummy_data.sql)
+- 프로젝트 구조 재편 및 빌드 아티팩트 정리
+
 ---
 
 ## 프로젝트 구조
