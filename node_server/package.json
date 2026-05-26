@@ -1,5 +1,5 @@
 {
-  "name": "node_server",
+  "name": "rpg-game-server-portfolio-2026",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.98.0",
     "express": "^5.2.1",
     "ioredis": "^5.10.1",
     "mysql2": "^3.22.3",

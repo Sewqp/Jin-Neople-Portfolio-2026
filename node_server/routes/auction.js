@@ -1,24 +1,26 @@
 const express = require('express');
 const router  = express.Router();
 const pool    = require('../db');
-const { logger } = require('../server');
+const logger  = require('../logger');
 
 // [거래소 목록 조회 — 판매 중 + 아이템 타입 필터 + 페이징]
 router.get('/api/auction', async (req, res) => {
-    const itemType = req.query.item_type || 0;
+    const itemType = req.query.item_type !== undefined ? Number(req.query.item_type) : null;
     const limit    = Number(req.query.limit)  || 20;
     const offset   = Number(req.query.offset) || 0;
 
     try {
+        const whereItemType = itemType !== null ? 'AND id.item_type = ?' : '';
+        const params        = itemType !== null ? [itemType] : [];
         const [rows] = await pool.execute(`
             SELECT a.auction_id, id.item_name, a.price,
                    ii.enhance_level, a.expired_at
             FROM auction AS a
             JOIN item_instance AS ii ON a.item_instance_id = ii.item_instance_id
             JOIN item_dictionary AS id ON ii.item_dict_id = id.item_dict_id
-            WHERE a.trade_status = 0 AND id.item_type = ?
-            LIMIT ? OFFSET ?
-        `, [itemType, limit, offset]);
+            WHERE a.trade_status = 0 ${whereItemType}
+            LIMIT ${parseInt(limit, 10)} OFFSET ${parseInt(offset, 10)}
+        `, params);
 
         res.json(rows);
     } catch (error) {

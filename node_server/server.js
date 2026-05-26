@@ -1,22 +1,7 @@
 const express = require('express');
-const { createLogger, format, transports } = require('winston');
+const logger  = require('./logger');
 
-// [Winston 로거 설정 — 날짜별 파일 + 콘솔 동시 출력]
-const logger = createLogger({
-    level: 'info',
-    format: format.combine(
-        format.timestamp(),
-        format.printf(info => `${info.timestamp} ${info.level}: ${info.message}`)
-    ),
-    transports: [
-        new transports.File({
-            filename: `logs/node_${new Date().toISOString().split('T')[0]}.log`
-        }),
-        new transports.Console()
-    ]
-});
-
-const app = express();
+const app  = express();
 const PORT = 3000;
 
 app.use(express.json());

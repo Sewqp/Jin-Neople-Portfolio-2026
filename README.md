@@ -1,4 +1,4 @@
-# Jin-Neople-Portfolio-2026
+# RPG GAME SERVER PORTFOLIO 2026
 
 ## 사용 AI 모델
 - **Local LLM**: Meta LLaMA 3.1 8B Instruct → Qwen 2.5 Coder 14B (업그레이드)
@@ -117,7 +117,7 @@ Node.js 웹 서버
 ```
 C++       : 14 / 14 파일 완성 (100%)
 Node.js   :  8 /  8 파일 완성 (100%)
-전체      : 22 / 22 파일 완성 (100%) 🎉
+전체      : 22 / 22 파일 완성 (100%)
 ```
 
 ---

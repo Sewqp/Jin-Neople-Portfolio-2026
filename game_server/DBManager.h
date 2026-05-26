@@ -1,7 +1,11 @@
 #pragma once
-#include <mysql/jdbc.h>
+#ifdef _WIN32
+#include <winsock2.h>
+#endif
+#include <mysql.h>
 #include <vector>
 #include <mutex>
+#include <string>
 #include "Packet.h"
 
 class DBManager {
@@ -14,26 +18,30 @@ public:
     void Init(const std::string& host, const std::string& user,
         const std::string& password, const std::string& schema);
 
-    // [ƒ≥∏Ø≈Õ]
+    // [Ï∫êÎ¶≠ÌÑ∞]
     bool InsertCharacter(const PKT_Character& pkt);
     bool UpdateCharacterStat(const PKT_CharacterStat& pkt);
     bool SelectCharacter(uint64_t characterId, PKT_Character& outPkt);
 
-    // [¿Œ∫•≈‰∏Æ]
+    // [Ïù∏Î≤§ÌÜ†Î¶¨]
     bool InsertInventory(const PKT_Inventory& pkt);
     bool SelectInventory(uint64_t characterId, std::vector<PKT_Inventory>& outList);
 
-    // [∞≈∑°º“]
+    // [Í±∞ÎûòÏÜå]
     bool InsertAuction(const PKT_Auction& pkt);
     bool UpdateAuctionStatus(uint64_t auctionId, TradeStatus status);
     bool SelectAuction(uint64_t auctionId, PKT_Auction& outPkt);
 
 private:
-    DBManager();
-    sql::Driver* m_driver = nullptr;
-    std::vector<sql::Connection*> m_connectionPool;
-    std::mutex                    m_poolLock;
+    DBManager() = default;
 
-    sql::Connection* GetConnection();
-    void ReturnConnection(sql::Connection*);
+    std::string          m_host;
+    std::string          m_user;
+    std::string          m_password;
+    std::string          m_schema;
+    std::vector<MYSQL*>  m_connectionPool;
+    std::mutex           m_poolLock;
+
+    MYSQL* GetConnection();
+    void   ReturnConnection(MYSQL* conn);
 };
