@@ -13,3 +13,4 @@ Release/
 x64/
 x86/
 vcpkg/
+node_modules/
