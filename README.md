@@ -92,6 +92,9 @@
 - Node.js: logger.js 모듈 분리 (server.js에서 로거 책임 분리)
 - DB 더미 데이터 추가 (dummy_data.sql)
 - 프로젝트 구조 재편 및 빌드 아티팩트 정리
+- PacketHandler DB 연동 구현 (InsertCharacter / UpdateCharacterStat / InsertInventory / InsertAuction 호출)
+- Packet.h 주석 인코딩 수정 (CP949 → UTF-8)
+- PacketHandler char 배열 안전 처리 (strnlen 적용)
 
 ---
 
