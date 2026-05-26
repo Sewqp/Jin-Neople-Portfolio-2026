@@ -1,5 +1,6 @@
 #include "PacketHandler.h"
 #include "AsyncLogger.h"
+#include "DBManager.h"
 
 PacketHandler& PacketHandler::GetInstance() {
     static PacketHandler instance;
@@ -7,17 +8,14 @@ PacketHandler& PacketHandler::GetInstance() {
 }
 
 void PacketHandler::Handle(std::shared_ptr<Session> session, std::vector<char>& packet) {
-    // [패킷 크기가 헤더보다 작으면 손상된 패킷]
     if (packet.size() < sizeof(PacketHeader)) {
         AsyncLogger::GetInstance().LogError(
             "패킷 크기 오류. Size: " + std::to_string(packet.size()));
         return;
     }
 
-    // [패킷 데이터를 PacketHeader*로 캐스팅]
     PacketHeader* header = reinterpret_cast<PacketHeader*>(packet.data());
 
-    // [패킷 ID로 분기]
     switch (header->id) {
     case PacketID::ADVENTURE_INFO:
         OnAdventureInfo(session, reinterpret_cast<PKT_Adventure*>(packet.data()));
@@ -50,41 +48,72 @@ void PacketHandler::Handle(std::shared_ptr<Session> session, std::vector<char>& 
 }
 
 void PacketHandler::OnAdventureInfo(std::shared_ptr<Session> session, PKT_Adventure* packet) {
-    AsyncLogger::GetInstance().Log("패킷 수신: ADVENTURE_INFO");
-    // TODO: 실제 처리 로직
+    AsyncLogger::GetInstance().Log(
+        "ADVENTURE_INFO 수신. adventure_id=" + std::to_string(packet->adventure_id) +
+        " name=" + std::string(packet->adventure_name));
 }
 
 void PacketHandler::OnGuildInfo(std::shared_ptr<Session> session, PKT_Guild* packet) {
-    AsyncLogger::GetInstance().Log("패킷 수신: GUILD_INFO");
-    // TODO: 실제 처리 로직
+    AsyncLogger::GetInstance().Log(
+        "GUILD_INFO 수신. guild_id=" + std::to_string(packet->guild_id) +
+        " name=" + std::string(packet->guild_name));
 }
 
 void PacketHandler::OnCharacterInfo(std::shared_ptr<Session> session, PKT_Character* packet) {
-    AsyncLogger::GetInstance().Log("패킷 수신: CHARACTER_INFO");
-    // TODO: 실제 처리 로직
+    AsyncLogger::GetInstance().Log(
+        "CHARACTER_INFO 수신. character_id=" + std::to_string(packet->character_id) +
+        " nickname=" + std::string(packet->nickname));
+
+    if (!DBManager::GetInstance().InsertCharacter(*packet)) {
+        AsyncLogger::GetInstance().LogError(
+            "CHARACTER_INFO DB 저장 실패. character_id=" + std::to_string(packet->character_id));
+    }
 }
 
 void PacketHandler::OnCharacterStat(std::shared_ptr<Session> session, PKT_CharacterStat* packet) {
-    AsyncLogger::GetInstance().Log("패킷 수신: CHARACTER_STAT_INFO");
-    // TODO: 실제 처리 로직
+    AsyncLogger::GetInstance().Log(
+        "CHARACTER_STAT_INFO 수신. character_id=" + std::to_string(packet->character_id) +
+        " level=" + std::to_string(packet->level));
+
+    if (!DBManager::GetInstance().UpdateCharacterStat(*packet)) {
+        AsyncLogger::GetInstance().LogError(
+            "CHARACTER_STAT_INFO DB 갱신 실패. character_id=" + std::to_string(packet->character_id));
+    }
 }
 
 void PacketHandler::OnItemDictionary(std::shared_ptr<Session> session, PKT_ItemDictionary* packet) {
-    AsyncLogger::GetInstance().Log("패킷 수신: ITEM_DICTIONARY_INFO");
-    // TODO: 실제 처리 로직
+    AsyncLogger::GetInstance().Log(
+        "ITEM_DICTIONARY_INFO 수신. item_dict_id=" + std::to_string(packet->item_dict_id) +
+        " name=" + std::string(packet->item_name));
 }
 
 void PacketHandler::OnItemInstance(std::shared_ptr<Session> session, PKT_ItemInstance* packet) {
-    AsyncLogger::GetInstance().Log("패킷 수신: ITEM_INSTANCE_INFO");
-    // TODO: 실제 처리 로직
+    AsyncLogger::GetInstance().Log(
+        "ITEM_INSTANCE_INFO 수신. item_instance_id=" + std::to_string(packet->item_instance_id) +
+        " count=" + std::to_string(packet->count) +
+        " enhance=" + std::to_string(packet->enhance_level));
 }
 
 void PacketHandler::OnInventory(std::shared_ptr<Session> session, PKT_Inventory* packet) {
-    AsyncLogger::GetInstance().Log("패킷 수신: INVENTORY_INFO");
-    // TODO: 실제 처리 로직
+    AsyncLogger::GetInstance().Log(
+        "INVENTORY_INFO 수신. character_id=" + std::to_string(packet->character_id) +
+        " slot=" + std::to_string(packet->slot_index));
+
+    if (!DBManager::GetInstance().InsertInventory(*packet)) {
+        AsyncLogger::GetInstance().LogError(
+            "INVENTORY_INFO DB 저장 실패. character_id=" + std::to_string(packet->character_id) +
+            " slot=" + std::to_string(packet->slot_index));
+    }
 }
 
 void PacketHandler::OnAuction(std::shared_ptr<Session> session, PKT_Auction* packet) {
-    AsyncLogger::GetInstance().Log("패킷 수신: AUCTION_INFO");
-    // TODO: 실제 처리 로직
+    AsyncLogger::GetInstance().Log(
+        "AUCTION_INFO 수신. auction_id=" + std::to_string(packet->auction_id) +
+        " seller_id=" + std::to_string(packet->seller_id) +
+        " price=" + std::to_string(packet->price));
+
+    if (!DBManager::GetInstance().InsertAuction(*packet)) {
+        AsyncLogger::GetInstance().LogError(
+            "AUCTION_INFO DB 저장 실패. auction_id=" + std::to_string(packet->auction_id));
+    }
 }
