@@ -1,6 +1,7 @@
 #include "PacketHandler.h"
 #include "AsyncLogger.h"
 #include "DBManager.h"
+#include "RedisManager.h"
 #include <cstring>
 
 PacketHandler& PacketHandler::GetInstance() {
@@ -72,13 +73,11 @@ void PacketHandler::OnCharacterInfo(std::shared_ptr<Session> session, PKT_Charac
 }
 
 void PacketHandler::OnCharacterStat(std::shared_ptr<Session> session, PKT_CharacterStat* packet) {
-    AsyncLogger::GetInstance().Log(
-        "CHARACTER_STAT_INFO 수신. character_id=" + std::to_string(packet->character_id) +
-        " level=" + std::to_string(packet->level));
-
-    if (!DBManager::GetInstance().UpdateCharacterStat(*packet)) {
+    // Redis 캐시에 먼저 기록 — IOCP 워커 블로킹 방지
+    // MySQL 반영은 SyncWorker가 30초 주기로 처리
+    if (!RedisManager::GetInstance().SetCharacterStat(packet->character_id, *packet)) {
         AsyncLogger::GetInstance().LogError(
-            "CHARACTER_STAT_INFO DB 갱신 실패. character_id=" + std::to_string(packet->character_id));
+            "CHARACTER_STAT_INFO Redis 저장 실패. character_id=" + std::to_string(packet->character_id));
     }
 }
 
