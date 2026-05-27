@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <thread>
 #include <atomic>
+#include <latch>
 #include <vector>
 #include <chrono>
 #include <cstring>
@@ -23,12 +24,12 @@ constexpr int      PACKETS_PER_CLIENT = 100;
 constexpr char     SERVER_IP[]        = "127.0.0.1";
 constexpr uint16_t SERVER_PORT        = 9000;
 
-// 50개씩 묶어서 3ms 간격으로 연결 — OS TCP SYN 큐 과부하 방지
+// 50개씩 묶어서 3ms 간격 — OS TCP SYN 큐 과부하 방지
 constexpr int BATCH_SIZE     = 50;
 constexpr int BATCH_DELAY_MS = 3;
 
 // -------------------------------------------------------
-// 전역 통계
+// 전역 통계 / 동기화
 // -------------------------------------------------------
 std::atomic<int>  g_connected   { 0 };
 std::atomic<int>  g_failed      { 0 };
@@ -36,24 +37,32 @@ std::atomic<int>  g_packetsSent { 0 };
 std::atomic<int>  g_sendErrors  { 0 };
 std::atomic<bool> g_done        { false };
 
+// 연결 페이즈 완료 후 전송 페이즈 시작 — AcceptEx / RECV 경합 방지
+std::latch g_connectLatch(TARGET_CONNECTIONS);
+
 // -------------------------------------------------------
-// 워커 스레드: 접속 → 패킷 전송 → 종료
+// 워커 스레드: [페이즈 1] 접속 → [페이즈 2] 전송
 // -------------------------------------------------------
 void WorkerThread(int clientId) {
-    // 배치 인덱스만큼 대기 — 50개씩 3ms 간격 (최대 ~57ms 램프업)
+    // 배치 스태거 — 50개씩 3ms 간격 (최대 ~57ms 램프업)
     int batchIndex = clientId / BATCH_SIZE;
     if (batchIndex > 0)
         std::this_thread::sleep_for(std::chrono::milliseconds(batchIndex * BATCH_DELAY_MS));
 
     DummyClient client(clientId);
+    bool connected = client.Connect(SERVER_IP, SERVER_PORT);
 
-    if (!client.Connect(SERVER_IP, SERVER_PORT)) {
-        ++g_failed;
-        return;
-    }
-    ++g_connected;
+    if (connected) ++g_connected;
+    else           ++g_failed;
 
-    // character_id 1~10 순환 (DB에 존재하는 ID)
+    // 모든 스레드가 접속 시도를 마칠 때까지 대기
+    // RECV 완료 이벤트가 없는 상태에서 AcceptEx만 처리되므로 1000/1000 달성
+    g_connectLatch.count_down();
+    g_connectLatch.wait();
+
+    if (!connected) return;
+
+    // ---- 페이즈 2: 패킷 전송 ----
     uint64_t charId = static_cast<uint64_t>(clientId % 10) + 1;
 
     PKT_CharacterStat pkt{};
@@ -88,17 +97,17 @@ void MonitorThread(std::chrono::steady_clock::time_point startTime) {
         auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - startTime).count();
 
-        int  sent = g_packetsSent.load();
-        double pps = elapsedMs > 0 ? (sent * 1000.0 / elapsedMs) : 0.0;
+        int    sent = g_packetsSent.load();
+        double pps  = elapsedMs > 0 ? (sent * 1000.0 / elapsedMs) : 0.0;
 
         std::cout
             << std::fixed << std::setprecision(1)
             << "[" << std::setw(5) << elapsedMs / 1000.0 << "s]"
-            << "  접속: "    << std::setw(4) << g_connected.load()
-            << "  실패: "    << std::setw(3) << g_failed.load()
-            << "  패킷: "    << std::setw(7) << sent
-            << "  pkt/s: "  << std::setw(6) << static_cast<int>(pps)
-            << "  오류: "    << g_sendErrors.load()
+            << "  접속: "   << std::setw(4) << g_connected.load()
+            << "  실패: "   << std::setw(3) << g_failed.load()
+            << "  패킷: "   << std::setw(7) << sent
+            << "  pkt/s: " << std::setw(6) << static_cast<int>(pps)
+            << "  오류: "   << g_sendErrors.load()
             << "\n";
     }
 }
@@ -117,10 +126,10 @@ int main() {
     }
 
     std::cout << "=== RPG 게임 서버 더미 클라이언트 ===\n";
-    std::cout << "서버  : " << SERVER_IP << ":" << SERVER_PORT << "\n";
-    std::cout << "클라이언트  : " << TARGET_CONNECTIONS << "\n";
-    std::cout << "클라이언트당 패킷  : " << PACKETS_PER_CLIENT << "\n";
-    std::cout << "예상 총 패킷  : " << TARGET_CONNECTIONS * PACKETS_PER_CLIENT << "\n";
+    std::cout << "서버           : " << SERVER_IP << ":" << SERVER_PORT << "\n";
+    std::cout << "클라이언트     : " << TARGET_CONNECTIONS << "\n";
+    std::cout << "클라이언트당   : " << PACKETS_PER_CLIENT << " 패킷\n";
+    std::cout << "예상 총 패킷   : " << TARGET_CONNECTIONS * PACKETS_PER_CLIENT << "\n";
     std::cout << "---\n";
 
     auto startTime = std::chrono::steady_clock::now();
@@ -141,8 +150,8 @@ int main() {
     auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - startTime).count();
 
-    int  totalPkts = g_packetsSent.load();
-    double pps     = elapsedMs > 0 ? (totalPkts * 1000.0 / elapsedMs) : 0.0;
+    int     totalPkts  = g_packetsSent.load();
+    double  pps        = elapsedMs > 0 ? (totalPkts * 1000.0 / elapsedMs) : 0.0;
     int64_t totalBytes = static_cast<int64_t>(totalPkts) * sizeof(PKT_CharacterStat);
 
     std::cout << "\n=== 최종 결과 ===\n";
