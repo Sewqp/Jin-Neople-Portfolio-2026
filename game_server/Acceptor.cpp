@@ -46,7 +46,7 @@ void Acceptor::Init(uint16_t port) {
     }
 
     // [listen]
-    if (listen(m_listenSock, ACCEPT_BACKLOG) == SOCKET_ERROR) {
+    if (listen(m_listenSock, LISTEN_BACKLOG) == SOCKET_ERROR) {
         AsyncLogger::GetInstance().LogError(
             "listen Failed. Error: " + std::to_string(WSAGetLastError()));
         return;
@@ -63,8 +63,7 @@ void Acceptor::Init(uint16_t port) {
     AsyncLogger::GetInstance().Log(
         "Acceptor Init. Port: " + std::to_string(port));
 
-    // [미리 ACCEPT_BACKLOG만큼 비동기 Accept 예약]
-    for (int i = 0; i < ACCEPT_BACKLOG; ++i) {
+    for (int i = 0; i < PENDING_ACCEPTS; ++i) {
         RegisterAccept();
     }
 }
