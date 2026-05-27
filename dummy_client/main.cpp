@@ -51,7 +51,7 @@ std::latch g_connectLatch(TARGET_CONNECTIONS);
 //   [페이즈 1] startId~endId 클라이언트를 순차 접속
 //   [페이즈 2] latch 해제 후 모든 소켓에 패킷 전송
 // -------------------------------------------------------
-void WorkerThread(int workerId) {
+void WorkerThread(int workerId, std::chrono::steady_clock::time_point testStart) {
     int slice    = TARGET_CONNECTIONS / WORKER_THREADS;
     int startId  = workerId * slice;
     int endId    = (workerId == WORKER_THREADS - 1) ? TARGET_CONNECTIONS : startId + slice;
@@ -61,9 +61,10 @@ void WorkerThread(int workerId) {
 
     // ---- 페이즈 1: 접속 ----
     for (int clientId = startId; clientId < endId; ++clientId) {
+        // 절대시각 기준 대기 — sleep_for는 호출마다 누적되므로 사용 금지
         int batchIndex = clientId / BATCH_SIZE;
-        if (batchIndex > 0)
-            std::this_thread::sleep_for(std::chrono::milliseconds(batchIndex * BATCH_DELAY_MS));
+        auto batchTime = testStart + std::chrono::milliseconds(batchIndex * BATCH_DELAY_MS);
+        std::this_thread::sleep_until(batchTime);
 
         DummyClient client(clientId);
         if (client.Connect(SERVER_IP, SERVER_PORT)) {
@@ -105,12 +106,12 @@ void WorkerThread(int workerId) {
 // -------------------------------------------------------
 // 모니터 스레드: 1초마다 실시간 현황 출력
 // -------------------------------------------------------
-void MonitorThread(std::chrono::steady_clock::time_point startTime) {
+void MonitorThread(std::chrono::steady_clock::time_point testStart) {
     while (!g_done.load()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
         auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now() - startTime).count();
+            std::chrono::steady_clock::now() - testStart).count();
 
         int    sent = g_packetsSent.load();
         double pps  = elapsedMs > 0 ? (sent * 1000.0 / elapsedMs) : 0.0;
@@ -148,14 +149,14 @@ int main() {
     std::cout << "예상 총 패킷   : " << TARGET_CONNECTIONS * PACKETS_PER_CLIENT << "\n";
     std::cout << "---\n";
 
-    auto startTime = std::chrono::steady_clock::now();
+    auto testStart = std::chrono::steady_clock::now();
 
-    std::thread monitor(MonitorThread, startTime);
+    std::thread monitor(MonitorThread, testStart);
 
     std::vector<std::thread> workers;
     workers.reserve(WORKER_THREADS);
     for (int i = 0; i < WORKER_THREADS; ++i)
-        workers.emplace_back(WorkerThread, i);
+        workers.emplace_back(WorkerThread, i, testStart);
 
     for (auto& t : workers)
         t.join();
@@ -164,7 +165,7 @@ int main() {
     monitor.join();
 
     auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::steady_clock::now() - startTime).count();
+        std::chrono::steady_clock::now() - testStart).count();
 
     int     totalPkts  = g_packetsSent.load();
     double  pps        = elapsedMs > 0 ? (totalPkts * 1000.0 / elapsedMs) : 0.0;
