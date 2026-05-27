@@ -98,6 +98,9 @@ void MonitorThread(std::chrono::steady_clock::time_point startTime) {
 // main
 // -------------------------------------------------------
 int main() {
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+
     WSADATA wsa;
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
         std::cerr << "WSAStartup 실패\n";
