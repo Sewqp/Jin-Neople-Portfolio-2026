@@ -6,11 +6,9 @@ bool RingBuffer::Write(const char* data, size_t len) {
     if (len > GetWritableSize())
         return false;
 
-    // [버퍼 끝까지 남은 공간]
     size_t tailSpace = BUFFER_SIZE - m_writePos;
 
     if (len <= tailSpace) {
-        // [한 번에 씀]
         std::memcpy(m_buffer.data() + m_writePos, data, len);
     }
     else {
