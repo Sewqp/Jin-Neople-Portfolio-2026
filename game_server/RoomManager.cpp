@@ -12,7 +12,7 @@ std::shared_ptr<Room> RoomManager::CreateRoom() {
     auto room = std::make_shared<Room>(roomId);
     m_rooms[roomId] = room;
     AsyncLogger::GetInstance().Log(
-        "Room ª˝º∫. ID: " + std::to_string(roomId));
+        "Room ÏÉùÏÑ±. ID: " + std::to_string(roomId));
     return room;
 }
 
@@ -20,7 +20,7 @@ void RoomManager::DestroyRoom(uint32_t roomId) {
     std::unique_lock lock(m_lock);
     m_rooms.erase(roomId);
     AsyncLogger::GetInstance().Log(
-        "Room ¡¶∞≈. ID: " + std::to_string(roomId));
+        "Room ÏÇ≠Ï†ú. ID: " + std::to_string(roomId));
 }
 
 std::shared_ptr<Room> RoomManager::GetRoom(uint32_t roomId) {

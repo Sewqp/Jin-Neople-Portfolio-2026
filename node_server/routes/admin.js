@@ -9,8 +9,14 @@ const MAX_LOG_LINES = 100;
 
 
 async function getOnlinePlayers() {
-    const keys = await redis.keys('session:*');
-    return keys.length;
+    let count = 0;
+    let cursor = '0';
+    do {
+        const [next, keys] = await redis.scan(cursor, 'MATCH', 'session:*', 'COUNT', 100);
+        count += keys.length;
+        cursor = next;
+    } while (cursor !== '0');
+    return count;
 }
 
 async function getTotalCharacters() {

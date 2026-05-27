@@ -44,19 +44,23 @@ void DBManager::Init(const std::string& host, const std::string& user,
 }
 
 MYSQL* DBManager::GetConnection() {
-    std::lock_guard<std::mutex> lock(m_poolLock);
-    if (!m_connectionPool.empty()) {
-        auto* conn = m_connectionPool.back();
-        m_connectionPool.pop_back();
-        return conn;
+    std::unique_lock<std::mutex> lock(m_poolLock);
+    if (!m_poolCondition.wait_for(lock, std::chrono::seconds(5),
+            [this] { return !m_connectionPool.empty(); })) {
+        AsyncLogger::GetInstance().LogError("DBManager 커넥션 획득 타임아웃 (5초)");
+        return nullptr;
     }
-    AsyncLogger::GetInstance().LogError("DBManager 커넥션 풀이 비어 있습니다.");
-    return nullptr;
+    auto* conn = m_connectionPool.back();
+    m_connectionPool.pop_back();
+    return conn;
 }
 
 void DBManager::ReturnConnection(MYSQL* conn) {
-    std::lock_guard<std::mutex> lock(m_poolLock);
-    m_connectionPool.push_back(conn);
+    {
+        std::lock_guard<std::mutex> lock(m_poolLock);
+        m_connectionPool.push_back(conn);
+    }
+    m_poolCondition.notify_one();
 }
 
 // ---------------------------------------------------------------

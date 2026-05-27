@@ -1,5 +1,7 @@
 #include "SyncWorker.h"
 #include "AsyncLogger.h"
+#include "DBManager.h"
+#include "RedisManager.h"
 
 SyncWorker& SyncWorker::GetInstance() {
     static SyncWorker instance;
@@ -13,7 +15,7 @@ SyncWorker::~SyncWorker() {
 void SyncWorker::Start() {
     m_isRunning = true;
     m_syncThread = std::thread(&SyncWorker::SyncLoop, this);
-    AsyncLogger::GetInstance().Log("SyncWorker ½ÃÀÛ");
+    AsyncLogger::GetInstance().Log("SyncWorker ì‹œì‘");
 }
 
 void SyncWorker::Stop() {
@@ -22,7 +24,7 @@ void SyncWorker::Stop() {
     if (m_syncThread.joinable()) {
         m_syncThread.join();
     }
-    AsyncLogger::GetInstance().Log("SyncWorker Á¾·á");
+    AsyncLogger::GetInstance().Log("SyncWorker ì¢…ë£Œ");
 }
 
 void SyncWorker::SyncLoop() {
@@ -41,8 +43,20 @@ void SyncWorker::SyncLoop() {
 }
 
 void SyncWorker::FlushAll() {
-    AsyncLogger::GetInstance().Log("Redis ¡æ MySQL µ¿±âÈ­ ½ÃÀÛ");
-    // TODO ÁÖ¼®À¸·Î ½ÇÁ¦ µ¿±âÈ­ ·ÎÁ÷ ÀÚ¸® Ç¥½Ã
-    // (RedisManager¿¡¼­ Ä³¸¯ÅÍ ½ºÅÈ Á¶È¸ ¡æ DBManager::UpdateCharacterStat() È£Ãâ)
-    AsyncLogger::GetInstance().Log("Redis ¡æ MySQL µ¿±âÈ­ ¿Ï·á");
+    AsyncLogger::GetInstance().Log("Redis â†’ MySQL ë™ê¸°í™” ì‹œì‘");
+
+    auto ids = RedisManager::GetInstance().GetAllCachedCharacterIds();
+    int successCount = 0;
+
+    for (uint64_t characterId : ids) {
+        PKT_CharacterStat stat{};
+        if (RedisManager::GetInstance().GetCharacterStat(characterId, stat)) {
+            if (DBManager::GetInstance().UpdateCharacterStat(stat))
+                ++successCount;
+        }
+    }
+
+    AsyncLogger::GetInstance().Log(
+        "Redis â†’ MySQL ë™ê¸°í™” ì™„ë£Œ. " + std::to_string(successCount) +
+        "/" + std::to_string(ids.size()) + " ì„±ê³µ");
 }

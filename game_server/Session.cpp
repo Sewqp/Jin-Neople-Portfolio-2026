@@ -1,5 +1,6 @@
 ﻿#include "Session.h"
 #include "AsyncLogger.h"
+#include "PacketHandler.h"
 
 extern std::atomic<uint64_t> GSessionIdAllocator;
 
@@ -104,8 +105,11 @@ void Session::SendCompleted() {
     RegisterSend();
 }
 void Session::OnRecvCompleted(int bytes) {
-
-    AsyncLogger::GetInstance().Log(
-        "수신 완료. SessionID: " + std::to_string(m_sessionId) +
-        " Bytes: " + std::to_string(bytes));
+    if (!m_ringBuffer.Write(m_recvBuffer.data(), bytes)) {
+        AsyncLogger::GetInstance().LogError(
+            "RingBuffer 오버플로우. SessionID: " + std::to_string(m_sessionId));
+        return;
+    }
+    while (auto pkt = m_ringBuffer.TryAssemblePacket())
+        PacketHandler::GetInstance().Handle(shared_from_this(), *pkt);
 }

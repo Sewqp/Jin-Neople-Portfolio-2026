@@ -9,7 +9,6 @@ RedisManager& RedisManager::GetInstance() {
 RedisManager::RedisManager() : m_context(nullptr) {}
 
 RedisManager::~RedisManager() {
-    // [¿¬°á ÇØÁ¦]
     if (m_context != nullptr) {
         redisFree(m_context);
     }
@@ -18,10 +17,10 @@ RedisManager::~RedisManager() {
 void RedisManager::Init(const std::string& host, int port) {
     m_context = redisConnect(host.c_str(), port);
     if (m_context == nullptr || m_context->err) {
-        AsyncLogger::GetInstance().LogError("Redis ¿¬°á ½ÇÆĞ");
+        AsyncLogger::GetInstance().LogError("Redis ì—°ê²° ì‹¤íŒ¨");
         return;
     }
-    AsyncLogger::GetInstance().Log("Redis ¿¬°á ¿Ï·á");
+    AsyncLogger::GetInstance().Log("Redis ì—°ê²° ì™„ë£Œ");
 }
 
 std::string RedisManager::MakeCharacterStatKey(uint64_t characterId) const {
@@ -40,7 +39,7 @@ bool RedisManager::SetCharacterStat(uint64_t characterId, const PKT_CharacterSta
         redisCommand(m_context, "SET %s %b EX %d",
             key.c_str(), &stat, size, EXPIRE_SECONDS));
     if (reply == nullptr || reply->type == REDIS_REPLY_ERROR) {
-        AsyncLogger::GetInstance().LogError("Ä³¸¯ÅÍ ½ºÅÈ ÀúÀå ½ÇÆĞ");
+        AsyncLogger::GetInstance().LogError("ìºë¦­í„° ìŠ¤íƒ¯ ì €ì¥ ì‹¤íŒ¨");
         freeReplyObject(reply);
         return false;
     }
@@ -49,12 +48,12 @@ bool RedisManager::SetCharacterStat(uint64_t characterId, const PKT_CharacterSta
 }
 
 bool RedisManager::GetCharacterStat(uint64_t characterId, PKT_CharacterStat& outStat) {
-    std::lock_guard<std::mutex> lock(m_lock); // [¸ÖÆ¼½º·¹µå ¾ÈÀü]
+    std::lock_guard<std::mutex> lock(m_lock);
     auto key = MakeCharacterStatKey(characterId);
     redisReply* reply = reinterpret_cast<redisReply*>(
         redisCommand(m_context, "GET %s", key.c_str()));
     if (reply == nullptr || reply->type == REDIS_REPLY_NIL) {
-        AsyncLogger::GetInstance().Log("Ä³¸¯ÅÍ ½ºÅÈ Ä³½Ã ¾øÀ½");
+        AsyncLogger::GetInstance().Log("ìºë¦­í„° ìŠ¤íƒ¯ ìºì‹œ ì—†ìŒ");
         freeReplyObject(reply);
         return false;
     }
@@ -64,7 +63,7 @@ bool RedisManager::GetCharacterStat(uint64_t characterId, PKT_CharacterStat& out
 }
 
 bool RedisManager::DeleteCharacterStat(uint64_t characterId) {
-    std::lock_guard<std::mutex> lock(m_lock); // [¸ÖÆ¼½º·¹µå ¾ÈÀü]
+    std::lock_guard<std::mutex> lock(m_lock);
     auto key = MakeCharacterStatKey(characterId);
     redisReply* reply = reinterpret_cast<redisReply*>(
         redisCommand(m_context, "DEL %s", key.c_str()));
@@ -80,7 +79,7 @@ bool RedisManager::SetSession(uint64_t sessionId, uint64_t characterId) {
         redisCommand(m_context, "SET %s %s EX %d",
             key.c_str(), value.c_str(), EXPIRE_SECONDS));
     if (reply == nullptr || reply->type == REDIS_REPLY_ERROR) {
-        AsyncLogger::GetInstance().LogError("¼¼¼Ç ÀúÀå ½ÇÆĞ");
+        AsyncLogger::GetInstance().LogError("ì„¸ì…˜ ì €ì¥ ì‹¤íŒ¨");
         freeReplyObject(reply);
         return false;
     }
@@ -89,12 +88,12 @@ bool RedisManager::SetSession(uint64_t sessionId, uint64_t characterId) {
 }
 
 bool RedisManager::GetSession(uint64_t sessionId, uint64_t& outCharacterId) {
-    std::lock_guard<std::mutex> lock(m_lock); // [¸ÖÆ¼½º·¹µå ¾ÈÀü]
+    std::lock_guard<std::mutex> lock(m_lock);
     auto key = MakeSessionKey(sessionId);
     redisReply* reply = reinterpret_cast<redisReply*>(
         redisCommand(m_context, "GET %s", key.c_str()));
     if (reply == nullptr || reply->type == REDIS_REPLY_NIL) {
-        AsyncLogger::GetInstance().Log("¼¼¼Ç Ä³½Ã ¾øÀ½");
+        AsyncLogger::GetInstance().Log("ì„¸ì…˜ ìºì‹œ ì—†ìŒ");
         freeReplyObject(reply);
         return false;
     }
@@ -104,10 +103,36 @@ bool RedisManager::GetSession(uint64_t sessionId, uint64_t& outCharacterId) {
 }
 
 bool RedisManager::DeleteSession(uint64_t sessionId) {
-    std::lock_guard<std::mutex> lock(m_lock); // [¸ÖÆ¼½º·¹µå ¾ÈÀü]
+    std::lock_guard<std::mutex> lock(m_lock);
     auto key = MakeSessionKey(sessionId);
     redisReply* reply = reinterpret_cast<redisReply*>(
         redisCommand(m_context, "DEL %s", key.c_str()));
     freeReplyObject(reply);
     return true;
+}
+
+std::vector<uint64_t> RedisManager::GetAllCachedCharacterIds() {
+    std::lock_guard<std::mutex> lock(m_lock);
+    std::vector<uint64_t> ids;
+
+    long long cursor = 0;
+    do {
+        redisReply* reply = reinterpret_cast<redisReply*>(
+            redisCommand(m_context, "SCAN %lld MATCH character:stat:* COUNT 100", cursor));
+        if (!reply || reply->type != REDIS_REPLY_ARRAY || reply->elements < 2) {
+            if (reply) freeReplyObject(reply);
+            break;
+        }
+        cursor = std::stoll(reply->element[0]->str);
+        redisReply* keyList = reply->element[1];
+        // "character:stat:" = 15 chars
+        for (size_t i = 0; i < keyList->elements; ++i) {
+            std::string key(keyList->element[i]->str);
+            if (key.size() > 15)
+                ids.push_back(std::stoull(key.substr(15)));
+        }
+        freeReplyObject(reply);
+    } while (cursor != 0);
+
+    return ids;
 }

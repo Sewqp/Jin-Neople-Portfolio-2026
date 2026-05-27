@@ -13,7 +13,7 @@ bool Room::Enter(std::shared_ptr<Session> session) {
     m_sessions[session->GetId()] = session;
     AsyncLogger::GetInstance().Log(
         "Room " + std::to_string(m_roomId) +
-        " ΐΤΐε. SessionID: " + std::to_string(session->GetId()));
+        " μ…μ¥. SessionID: " + std::to_string(session->GetId()));
     return true;
 }
 
@@ -22,7 +22,7 @@ void Room::Leave(uint64_t sessionId) {
     m_sessions.erase(sessionId);
     AsyncLogger::GetInstance().Log(
         "Room " + std::to_string(m_roomId) +
-        " Επΐε. SessionID: " + std::to_string(sessionId));
+        " ν‡΄μ¥. SessionID: " + std::to_string(sessionId));
 }
 
 void Room::Broadcast(char* data, size_t size) {

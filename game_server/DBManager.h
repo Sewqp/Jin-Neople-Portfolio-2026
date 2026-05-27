@@ -5,6 +5,8 @@
 #include <mysql.h>
 #include <vector>
 #include <mutex>
+#include <condition_variable>
+#include <chrono>
 #include <string>
 #include "Packet.h"
 
@@ -39,8 +41,9 @@ private:
     std::string          m_user;
     std::string          m_password;
     std::string          m_schema;
-    std::vector<MYSQL*>  m_connectionPool;
-    std::mutex           m_poolLock;
+    std::vector<MYSQL*>       m_connectionPool;
+    std::mutex                m_poolLock;
+    std::condition_variable   m_poolCondition;
 
     MYSQL* GetConnection();
     void   ReturnConnection(MYSQL* conn);

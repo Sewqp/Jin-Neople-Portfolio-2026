@@ -2,6 +2,8 @@ const { createLogger, format, transports, Transport } = require('winston');
 const fs       = require('fs');
 const Anthropic = require('@anthropic-ai/sdk');
 
+fs.mkdirSync('logs', { recursive: true });
+
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 async function analyzeError(message) {
@@ -25,7 +27,7 @@ const ERROR_COOLDOWN_MS = 60_000;
 // 날짜 롤오버 대응을 위해 직접 구현
 class DailyFileTransport extends Transport {
     log(info, callback) {
-        const date = new Date().toISOString().split('T')[0];
+        const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
         fs.appendFile(`logs/node_${date}.log`, info[Symbol.for('message')] + '\n', () => callback());
     }
 }
