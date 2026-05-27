@@ -25,7 +25,7 @@ private:
     void RegisterAccept();
 
     static constexpr int LISTEN_BACKLOG   = SOMAXCONN; // OS TCP 대기열 최대
-    static constexpr int PENDING_ACCEPTS  = 64;        // 사전 예약할 AcceptEx 수
+    static constexpr int PENDING_ACCEPTS  = 256;       // 사전 예약할 AcceptEx 수
     static constexpr int ADDR_BUFFER_SIZE = 64;
 
     IocpCore& m_iocpCore;

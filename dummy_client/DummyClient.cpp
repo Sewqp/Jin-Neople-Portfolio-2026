@@ -3,6 +3,11 @@
 
 DummyClient::DummyClient(int clientId) : m_clientId(clientId) {}
 
+DummyClient::DummyClient(DummyClient&& other) noexcept
+    : m_sock(other.m_sock), m_clientId(other.m_clientId) {
+    other.m_sock = INVALID_SOCKET;
+}
+
 DummyClient::~DummyClient() { Disconnect(); }
 
 bool DummyClient::Connect(const char* ip, uint16_t port) {

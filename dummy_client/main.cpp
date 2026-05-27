@@ -11,6 +11,7 @@
 #include <latch>
 #include <vector>
 #include <chrono>
+#include <algorithm>
 #include <cstring>
 
 #include "../game_server/Packet.h"
@@ -19,14 +20,18 @@
 // -------------------------------------------------------
 // 설정
 // -------------------------------------------------------
-constexpr int      TARGET_CONNECTIONS = 1000;
+constexpr int      TARGET_CONNECTIONS = 10000;
 constexpr int      PACKETS_PER_CLIENT = 100;
 constexpr char     SERVER_IP[]        = "127.0.0.1";
 constexpr uint16_t SERVER_PORT        = 9000;
 
-// 50개씩 묶어서 3ms 간격 — OS TCP SYN 큐 과부하 방지
-constexpr int BATCH_SIZE     = 50;
+// 100개씩 3ms 간격 — 300ms 램프업 (100 배치 × 3ms)
+constexpr int BATCH_SIZE     = 100;
 constexpr int BATCH_DELAY_MS = 3;
+
+// 스레드 풀 크기 — 최소 32, 최대 hw_concurrency*2
+// 각 스레드가 TARGET_CONNECTIONS/WORKER_THREADS 개의 소켓을 순차 관리
+const int WORKER_THREADS = std::max(32, (int)std::thread::hardware_concurrency() * 2);
 
 // -------------------------------------------------------
 // 전역 통계 / 동기화
@@ -37,53 +42,62 @@ std::atomic<int>  g_packetsSent { 0 };
 std::atomic<int>  g_sendErrors  { 0 };
 std::atomic<bool> g_done        { false };
 
-// 연결 페이즈 완료 후 전송 페이즈 시작 — AcceptEx / RECV 경합 방지
+// 연결 페이즈 완료 후 전송 페이즈 시작
 std::latch g_connectLatch(TARGET_CONNECTIONS);
 
 // -------------------------------------------------------
-// 워커 스레드: [페이즈 1] 접속 → [페이즈 2] 전송
+// 워커 스레드
+//   [페이즈 1] startId~endId 클라이언트를 순차 접속
+//   [페이즈 2] latch 해제 후 모든 소켓에 패킷 전송
 // -------------------------------------------------------
-void WorkerThread(int clientId) {
-    // 배치 스태거 — 50개씩 3ms 간격 (최대 ~57ms 램프업)
-    int batchIndex = clientId / BATCH_SIZE;
-    if (batchIndex > 0)
-        std::this_thread::sleep_for(std::chrono::milliseconds(batchIndex * BATCH_DELAY_MS));
+void WorkerThread(int workerId) {
+    int slice    = TARGET_CONNECTIONS / WORKER_THREADS;
+    int startId  = workerId * slice;
+    int endId    = (workerId == WORKER_THREADS - 1) ? TARGET_CONNECTIONS : startId + slice;
 
-    DummyClient client(clientId);
-    bool connected = client.Connect(SERVER_IP, SERVER_PORT);
+    std::vector<DummyClient> clients;
+    clients.reserve(endId - startId);
 
-    if (connected) ++g_connected;
-    else           ++g_failed;
+    // ---- 페이즈 1: 접속 ----
+    for (int clientId = startId; clientId < endId; ++clientId) {
+        int batchIndex = clientId / BATCH_SIZE;
+        if (batchIndex > 0)
+            std::this_thread::sleep_for(std::chrono::milliseconds(batchIndex * BATCH_DELAY_MS));
 
-    // 모든 스레드가 접속 시도를 마칠 때까지 대기
-    // RECV 완료 이벤트가 없는 상태에서 AcceptEx만 처리되므로 1000/1000 달성
-    g_connectLatch.count_down();
-    g_connectLatch.wait();
+        DummyClient client(clientId);
+        if (client.Connect(SERVER_IP, SERVER_PORT)) {
+            ++g_connected;
+            clients.push_back(std::move(client));
+        } else {
+            ++g_failed;
+        }
+        g_connectLatch.count_down();
+    }
 
-    if (!connected) return;
+    g_connectLatch.wait(); // 전체 접속 완료까지 대기
 
     // ---- 페이즈 2: 패킷 전송 ----
-    uint64_t charId = static_cast<uint64_t>(clientId % 10) + 1;
+    for (auto& client : clients) {
+        PKT_CharacterStat pkt{};
+        pkt.header.size  = static_cast<uint16_t>(sizeof(PKT_CharacterStat));
+        pkt.header.id    = PacketID::CHARACTER_STAT_INFO;
+        pkt.character_id = static_cast<uint64_t>(client.GetId() % 10) + 1;
+        pkt.hp_max       = 10000;
+        pkt.mp_max       = 5000;
+        pkt.is_alive     = Status::NORMAL;
+        pkt.last_map_id  = static_cast<uint32_t>(1 + (client.GetId() % 20));
 
-    PKT_CharacterStat pkt{};
-    pkt.header.size  = static_cast<uint16_t>(sizeof(PKT_CharacterStat));
-    pkt.header.id    = PacketID::CHARACTER_STAT_INFO;
-    pkt.character_id = charId;
-    pkt.hp_max       = 10000;
-    pkt.mp_max       = 5000;
-    pkt.is_alive     = Status::NORMAL;
-    pkt.last_map_id  = static_cast<uint32_t>(1 + (clientId % 20));
+        for (int i = 0; i < PACKETS_PER_CLIENT; ++i) {
+            pkt.level = static_cast<uint32_t>(1 + (i % 100));
+            pkt.hp    = static_cast<uint32_t>(pkt.hp_max - (i * 10) % pkt.hp_max);
+            pkt.mp    = static_cast<uint32_t>(pkt.mp_max - (i * 5)  % pkt.mp_max);
 
-    for (int i = 0; i < PACKETS_PER_CLIENT; ++i) {
-        pkt.level = static_cast<uint32_t>(1 + (i % 100));
-        pkt.hp    = static_cast<uint32_t>(pkt.hp_max - (i * 10) % pkt.hp_max);
-        pkt.mp    = static_cast<uint32_t>(pkt.mp_max - (i * 5)  % pkt.mp_max);
-
-        if (!client.SendPacket(&pkt, static_cast<int>(sizeof(pkt)))) {
-            ++g_sendErrors;
-            break;
+            if (!client.SendPacket(&pkt, static_cast<int>(sizeof(pkt)))) {
+                ++g_sendErrors;
+                break;
+            }
+            ++g_packetsSent;
         }
-        ++g_packetsSent;
     }
 }
 
@@ -103,10 +117,10 @@ void MonitorThread(std::chrono::steady_clock::time_point startTime) {
         std::cout
             << std::fixed << std::setprecision(1)
             << "[" << std::setw(5) << elapsedMs / 1000.0 << "s]"
-            << "  접속: "   << std::setw(4) << g_connected.load()
-            << "  실패: "   << std::setw(3) << g_failed.load()
-            << "  패킷: "   << std::setw(7) << sent
-            << "  pkt/s: " << std::setw(6) << static_cast<int>(pps)
+            << "  접속: "   << std::setw(5) << g_connected.load()
+            << "  실패: "   << std::setw(4) << g_failed.load()
+            << "  패킷: "   << std::setw(8) << sent
+            << "  pkt/s: " << std::setw(7) << static_cast<int>(pps)
             << "  오류: "   << g_sendErrors.load()
             << "\n";
     }
@@ -128,6 +142,7 @@ int main() {
     std::cout << "=== RPG 게임 서버 더미 클라이언트 ===\n";
     std::cout << "서버           : " << SERVER_IP << ":" << SERVER_PORT << "\n";
     std::cout << "클라이언트     : " << TARGET_CONNECTIONS << "\n";
+    std::cout << "워커 스레드    : " << WORKER_THREADS << "\n";
     std::cout << "클라이언트당   : " << PACKETS_PER_CLIENT << " 패킷\n";
     std::cout << "예상 총 패킷   : " << TARGET_CONNECTIONS * PACKETS_PER_CLIENT << "\n";
     std::cout << "---\n";
@@ -137,8 +152,8 @@ int main() {
     std::thread monitor(MonitorThread, startTime);
 
     std::vector<std::thread> workers;
-    workers.reserve(TARGET_CONNECTIONS);
-    for (int i = 0; i < TARGET_CONNECTIONS; ++i)
+    workers.reserve(WORKER_THREADS);
+    for (int i = 0; i < WORKER_THREADS; ++i)
         workers.emplace_back(WorkerThread, i);
 
     for (auto& t : workers)
