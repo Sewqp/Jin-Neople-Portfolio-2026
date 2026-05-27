@@ -23,6 +23,10 @@ constexpr int      PACKETS_PER_CLIENT = 100;
 constexpr char     SERVER_IP[]        = "127.0.0.1";
 constexpr uint16_t SERVER_PORT        = 9000;
 
+// 50개씩 묶어서 3ms 간격으로 연결 — OS TCP SYN 큐 과부하 방지
+constexpr int BATCH_SIZE     = 50;
+constexpr int BATCH_DELAY_MS = 3;
+
 // -------------------------------------------------------
 // 전역 통계
 // -------------------------------------------------------
@@ -36,6 +40,11 @@ std::atomic<bool> g_done        { false };
 // 워커 스레드: 접속 → 패킷 전송 → 종료
 // -------------------------------------------------------
 void WorkerThread(int clientId) {
+    // 배치 인덱스만큼 대기 — 50개씩 3ms 간격 (최대 ~57ms 램프업)
+    int batchIndex = clientId / BATCH_SIZE;
+    if (batchIndex > 0)
+        std::this_thread::sleep_for(std::chrono::milliseconds(batchIndex * BATCH_DELAY_MS));
+
     DummyClient client(clientId);
 
     if (!client.Connect(SERVER_IP, SERVER_PORT)) {
