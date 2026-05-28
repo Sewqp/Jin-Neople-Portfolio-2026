@@ -96,6 +96,24 @@
 - Packet.h 주석 인코딩 수정 (CP949 → UTF-8)
 - PacketHandler char 배열 안전 처리 (strnlen 적용)
 
+### UPDATE
+**2026-05-27**
+- 불필요한 주석 제거 (refactor)
+- 버그 수정, 파이프라인 연결, 인코딩 정리
+
+### UPDATE
+**2026-05-28**
+- 더미 클라이언트 추가 (1000 동시 접속 부하 테스트 시작)
+- Acceptor listen backlog `SOMAXCONN`으로 확장, AcceptEx 사전 예약 64개로 증가
+- 더미 클라이언트 콘솔 UTF-8 출력 설정
+- 더미 클라이언트 배치 연결 스태거 추가 (50개씩 3ms 간격)
+- `OnCharacterStat` IOCP 워커 블로킹 제거 — DB 직접 호출을 Redis 캐시 쓰기로 교체
+- 더미 클라이언트 연결/전송 페이즈 분리 (`std::latch`)
+- 10K 동시 접속 목표 달성 — 스레드 풀 클라이언트, AcceptEx 256개, RingBuffer 16KB
+- `NOMINMAX` 추가 — Windows `max` 매크로와 `std::max` 충돌 해결
+- 스태거 `sleep_for` → `sleep_until` 변경 — 배치 대기 시간 누적 버그 수정
+- 아키텍처 다이어그램 및 스트레스 테스트 결과 문서화
+
 ---
 
 ## 시스템 아키텍처
